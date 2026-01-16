@@ -1,0 +1,9 @@
+nohup: ignoring input
+  ▲ Next.js 13.5.11
+  - Local:        http://localhost:3000
+  - Environments: .env.local
+
+ ✓ Ready in 3s
+ ○ Compiling /not-found ...
+ ✓ Compiled /not-found in 3.4s (391 modules)
+[?25h
