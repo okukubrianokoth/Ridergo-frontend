@@ -8,15 +8,17 @@ export default function RiderRegister() {
   const [currentStep, setCurrentStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
-  const [location, setLocation] = useState({ latitude: null, longitude: null })
-  const [riderId, setRiderId] = useState(null)
+  const [riderId, setRiderId] = useState<string | null>(null)
+  const [location, setLocation] = useState<{ latitude: number | null; longitude: number | null }>({ latitude: null, longitude: null })
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<any>({
     // Step 1: Basic Info
     firstName: '',
     lastName: '',
     email: '',
     phone: '',
+    password: '',
+    confirmPassword: '',
 
     // Step 2: OTP Verification
     otp: '',
@@ -68,26 +70,37 @@ export default function RiderRegister() {
     setFormData(prev => ({ ...prev, [name]: files[0] }))
   }
 
-  const sendOtp = async () => {
-    if (!formData.phone) {
-      setMessage('Please enter your phone number')
+  const registerRider = async () => {
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone || !formData.password) {
+      setMessage('Please fill in all required fields')
+      return
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setMessage('Passwords do not match')
+      return
+    }
+
+    if (formData.password.length < 6) {
+      setMessage('Password must be at least 6 characters long')
       return
     }
 
     setLoading(true)
     try {
       const response = await axios.post('http://localhost:5000/api/rider/register', {
-        phone: formData.phone,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        email: formData.email
+        email: formData.email,
+        phone: formData.phone,
+        password: formData.password
       })
 
       setRiderId(response.data.riderId)
-      setMessage('OTP sent to your email')
+      setMessage('OTP sent to your email! Check your inbox.')
       setCurrentStep(2)
     } catch (error: any) {
-      setMessage(error.response?.data?.message || 'Error sending OTP')
+      setMessage(error.response?.data?.message || 'Registration failed')
     }
     setLoading(false)
   }
@@ -107,6 +120,8 @@ export default function RiderRegister() {
 
       // Store token for subsequent requests
       localStorage.setItem('token', res.data.token)
+      localStorage.setItem('userType', 'rider')
+      localStorage.setItem('userData', JSON.stringify(res.data.rider))
 
       setMessage('Phone verified successfully!')
       setCurrentStep(3)
@@ -205,7 +220,7 @@ export default function RiderRegister() {
 
   const steps = [
     { number: 1, title: 'Basic Info', description: 'Personal details' },
-    { number: 2, title: 'Verify Phone', description: 'OTP verification' },
+    { number: 2, title: 'Verify Email', description: 'OTP verification' },
     { number: 3, title: 'KYC Documents', description: 'ID and license' },
     { number: 4, title: 'Vehicle Info', description: 'Vehicle details' },
     { number: 5, title: 'Additional Info', description: 'Emergency contacts' }
@@ -316,12 +331,40 @@ export default function RiderRegister() {
                 />
               </div>
 
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Min 6 characters"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+                  <input
+                    type="password"
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Confirm password"
+                    required
+                  />
+                </div>
+              </div>
+
               <button
-                onClick={sendOtp}
-                disabled={loading || !formData.firstName || !formData.lastName || !formData.email || !formData.phone}
+                onClick={registerRider}
+                disabled={loading || !formData.firstName || !formData.lastName || !formData.email || !formData.phone || !formData.password}
                 className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
               >
-                {loading ? 'Sending OTP...' : 'Send OTP & Continue'}
+                {loading ? 'Sending OTP...' : 'Create Account & Send OTP'}
               </button>
             </div>
           )}
@@ -329,12 +372,12 @@ export default function RiderRegister() {
           {/* Step 2: OTP Verification */}
           {currentStep === 2 && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-6">Verify Your Phone</h2>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-6">Verify Your Email</h2>
 
               <div className="bg-blue-50 p-4 rounded-lg">
                 <p className="text-blue-800">
-                  We've sent an OTP to <strong>{formData.phone}</strong>.
-                  Please check your WhatsApp messages.
+                  We've sent an OTP to <strong>{formData.email}</strong>.
+                  Please check your email (and spam folder) for the verification code.
                 </p>
               </div>
 
